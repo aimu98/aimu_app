@@ -4,16 +4,17 @@ from . import views
 from photo_booking_app import views
 from django.contrib.auth.views import LogoutView
 from django.contrib.auth import views as auth_views
+from accounts import views as account_views
 
 urlpatterns = [
     path('', views.home, name='home'), 
     path('reservation/', views.reservation_form, name='reservation'),
-    path('reservation/done/', views.reservation_done, name='reservation_done'),
+    path('reservation_done/', views.reservation_done, name='reservation_done'),
     path('api/available-times/', views.get_available_times, name='get_available_times'),
     path('api/available-dates/', views.get_available_dates, name='get_available_dates'),
     path('add_available_slot/', views.add_available_slot, name='add_available_slot'),
     path('available_slots/', views.available_slots_view, name='available_slots'),
-    path('reservation_history/', views.reservation_history, name='reservation_history'),
+    path('reservation_history/', account_views.reservation_history, name='reservation_history'),
     path('reservation/<int:reservation_id>/edit/', views.edit_reservation, name='edit_reservation'),
     path('reservation/<int:reservation_id>/', views.reservation_detail, name='reservation_detail'),
     path('reservations/cancel/<int:reservation_id>/', views.cancel_reservation, name='cancel_reservation'),

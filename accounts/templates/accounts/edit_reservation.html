@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="form-container">
+    <h2>予約内容を編集</h2>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="btn btn-primary">保存</button>
+    </form>
+  </div>
+{% endblock %}

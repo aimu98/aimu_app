@@ -30,7 +30,7 @@
                     <td>{{ reservation.children_name }}</td>
                     <td>
                         {% if reservation.can_cancel %}
-                        <form method="POST" action="{% url 'cancel_reservation' reservation.id %}">
+                        <form method="POST" action="{% url 'accounts:cancel_reservation' reservation.id %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-danger btn-sm w-100">🚫 キャンセル</button>
                         </form>
@@ -40,7 +40,7 @@
                     </td>
                     <td>
                         {% if reservation.can_edit %}
-                        <a href="{% url 'edit_reservation' reservation.id %}" class="btn btn-success btn-sm w-100">✏️ 編集</a>
+                        <a href="{% url 'accounts:edit_reservation' reservation.id %}" class="btn btn-success btn-sm w-100">✏️ 編集</a>
                         {% else %}
                         <span class="text-muted">編集不可</span>
                         {% endif %}

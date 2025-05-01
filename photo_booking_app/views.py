@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponse
-from .forms import ReservationForm, AvailableSlotForm,ReservationEditForm, CustomUserCreationForm
-from .models import Reservation , AvailableSlot, User
+from .forms import AvailableSlotForm,ReservationEditForm, CustomUserCreationForm
+from photo_booking_app.models import Reservation , AvailableSlot, User
 from datetime import datetime, time, timedelta , date
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
@@ -25,58 +25,121 @@ from django.contrib.auth import get_user_model
 from django.views.generic import CreateView
 
 
+# @login_required
+# def reservation_form(request):
+#     if request.method == 'POST':
+#         selected_date = request.POST.get('date')
+#         form = ReservationForm(request.POST, selected_date=selected_date)
+
+#         if form.is_valid():
+#             reservation = form.save(commit=False)
+#             reservation.user = request.user
+#             reservation.save()
+
+#             # メール送信（お客様）
+#             send_mail(
+#                 subject='【撮影予約完了のお知らせ】',
+#                 message=(
+#                     f"{request.user.first_name} 様\n\n"
+#                     f"以下の内容でご予約を承りました。\n\n"
+#                     f"日付: {reservation.date}\n"
+#                     f"時間: {reservation.start_time}〜{reservation.end_time}\n"
+#                     f"プラン: {reservation.get_plan_display()}\n\n"
+#                     f"ご不明点があればご連絡ください。"
+#                 ),
+#                 from_email='no-reply@example.com',
+#                 recipient_list=[request.user.email],
+#                 fail_silently=False,
+#             )
+
+#             # メール送信（管理者）
+#             send_mail(
+#                 subject='【新しい予約が入りました】',
+#                 message=(
+#                     f"新しい予約が入りました。\n"
+#                     f"お名前：{reservation.name}\n"
+#                     f"日付：{reservation.date}\n"
+#                     f"時間：{reservation.start_time}〜{reservation.end_time}\n"
+#                     f"プラン：{reservation.get_plan_display()}"
+#                 ),
+#                 from_email='no-reply@example.com',
+#                 recipient_list=['your_admin_email@example.com'],
+#                 fail_silently=False,
+#             )
+
+#             return redirect('reservation_done')
+#         else:
+#             # バリデーションエラー表示
+#             return render(request, 'photo_booking_app/reservation_form.html', {'form': form})
+    
+#     else:
+#         form = ReservationForm()
+
+#     return render(request, 'photo_booking_app/reservation_form.html', {'form': form})
+
+
 @login_required
 def reservation_form(request):
-    print(f"リクエストメソッド: {request.method}") 
     if request.method == 'POST':
-        form = ReservationForm(request.POST)
-        if form.is_valid():
-            reservation = form.save(commit=False)
-            reservation.user = request.user
-            reservation.save()
-            
-            print(f"予約が保存されました: {reservation.id} - {reservation.name} - {reservation.date} - {reservation.start_time}")
+        date_str = request.POST.get('date')
+        start_time_str = request.POST.get('start_time')
+        end_time_str = request.POST.get('end_time')
+        plan = request.POST.get('plan')
+        name = request.POST.get('name')
+        children_name = request.POST.get('children_name')
 
-            
-
-            # ログインユーザーのメールアドレスを取得
-            user_email = request.user.email
-
-            # お客様への確認メール
-            send_mail(
-                subject='【撮影予約完了のお知らせ】',
-                message = f"""      
-                    {request.user.first_name} 様
-
-                    以下の内容でご予約を承りました。
-
-                    日付: {reservation.date}
-                    時間: {reservation.start_time}〜{reservation.end_time}
-                    プラン: {reservation.plan}
-
-                    ご不明点があればご連絡ください。
-                    """,
-                from_email='no-reply@example.com',
-                recipient_list=[user_email],
+        try:
+            reservation = Reservation.objects.create(
+                user=request.user,
+                date=datetime.strptime(date_str, '%Y-%m-%d').date(),
+                start_time=datetime.strptime(start_time_str, '%H:%M').time(),
+                end_time=datetime.strptime(end_time_str, '%H:%M').time(),
+                plan=plan,
+                name=name,
+                children_name=children_name,
             )
 
-            # 管理者への通知メール
+            # メール送信（お客様）
+            send_mail(
+                subject='【撮影予約完了のお知らせ】',
+                message=(
+                    f"{request.user.first_name} 様\n\n"
+                    f"以下の内容でご予約を承りました。\n\n"
+                    f"日付: {reservation.date}\n"
+                    f"時間: {reservation.start_time}〜{reservation.end_time}\n"
+                    f"プラン: {reservation.get_plan_display()}\n\n"
+                    f"ご不明点があればご連絡ください。"
+                ),
+                from_email='no-reply@example.com',
+                recipient_list=[request.user.email],
+                fail_silently=False,
+            )
+
+            # メール送信（管理者）
             send_mail(
                 subject='【新しい予約が入りました】',
-                message=f"新しい予約が入りました。\nお名前：{reservation.name}\n日付：{reservation.date}\n時間：{reservation.start_time}\nプラン：{reservation.plan}",
+                message=(
+                    f"新しい予約が入りました。\n"
+                    f"保護者名：{reservation.name}\n"
+                    f"お子様名：{reservation.children_name}\n"
+                    f"日付：{reservation.date}\n"
+                    f"時間：{reservation.start_time}〜{reservation.end_time}\n"
+                    f"プラン：{reservation.get_plan_display()}"
+                ),
                 from_email='no-reply@example.com',
-                recipient_list=['your_admin_email@example.com'],  # 管理者メールアドレス
+                recipient_list=['ay.1031.ld@gmail.com'],
+                fail_silently=False,
             )
 
             return redirect('reservation_done')
-        else:
-            print(form.errors)  # エラー内容を表示
-            return render(request, 'photo_booking_app/reservation_form.html', {'form': form})
-        
-    else:
-        form = ReservationForm()
-        
-    return render(request, 'photo_booking_app/reservation_form.html', {'form': form})
+
+        except Exception as e:
+            messages.error(request, f"予約に失敗しました: {e}")
+            return render(request, 'photo_booking_app/reservation_form.html')
+
+    return render(request, 'photo_booking_app/reservation_form.html')
+
+
 
 def reservation_done(request):
     return render(request, 'photo_booking_app/reservation_done.html')
@@ -87,24 +150,23 @@ def get_available_dates(request):
     return JsonResponse({'available_dates': dates})
 
 def get_available_times(request):
-    date_str = request.GET.get('date')  # 'YYYY-MM-DD'
-    try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-    except (ValueError, TypeError):
+    date_str = request.GET.get('date')
+    if not date_str:
         return JsonResponse({'available_times': []})
 
-    available_slots = AvailableSlot.objects.filter(date=date_obj)
-    reserved_slots = Reservation.objects.filter(date=date_obj)
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'available_times': []})
 
-    reserved_times = [(r.start_time, r.end_time) for r in reserved_slots]
+    slots = AvailableSlot.objects.filter(date=date_obj)
 
-    available_times = []
-    for slot in available_slots:
-        if (slot.start_time, slot.end_time) not in reserved_times:
-            formatted = f"{slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')}"
-            available_times.append(formatted)
+    time_slots = [
+        f"{slot.start_time.strftime('%H:%M')} - {slot.end_time.strftime('%H:%M')}"
+        for slot in slots
+    ]
+    return JsonResponse({'available_times': time_slots})
 
-    return JsonResponse({'available_times': available_times})
 
 def available_slots_view(request):
     available_slots = AvailableSlot.objects.all()
@@ -122,35 +184,26 @@ def add_available_slot(request):
 
     return render(request, 'photo_booking_app/add_available_slot.html', {'form': form})
 
-def add_event_to_google_calendar(reservation):
-    SCOPES = ['https://www.googleapis.com/auth/calendar']
-    creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
-    service = build('calendar', 'v3', credentials=creds)
+# def add_event_to_google_calendar(reservation):
+#     SCOPES = ['https://www.googleapis.com/auth/calendar']
+#     creds = Credentials.from_service_account_file('credentials.json', scopes=SCOPES)
+#     service = build('calendar', 'v3', credentials=creds)
 
-    event = {
-        'summary': f'📷 予約: {reservation.name}',
-        'description': reservation.message,
-        'start': {
-            'dateTime': datetime.combine(reservation.slot.date, reservation.slot.start_time).isoformat(),
-            'timeZone': 'Asia/Tokyo',
-        },
-        'end': {
-            'dateTime': datetime.combine(reservation.slot.date, reservation.slot.end_time).isoformat(),
-            'timeZone': 'Asia/Tokyo',
-        },
-    }
+#     event = {
+#         'summary': f'📷 予約: {reservation.name}',
+#         'description': reservation.message,
+#         'start': {
+#             'dateTime': datetime.combine(reservation.slot.date, reservation.slot.start_time).isoformat(),
+#             'timeZone': 'Asia/Tokyo',
+#         },
+#         'end': {
+#             'dateTime': datetime.combine(reservation.slot.date, reservation.slot.end_time).isoformat(),
+#             'timeZone': 'Asia/Tokyo',
+#         },
+#     }
 
-    service.events().insert(calendarId='ay.1031.ld@group.calendar.google.com', body=event).execute()
+#     service.events().insert(calendarId='ay.1031.ld@group.calendar.google.com', body=event).execute()
     
-@login_required
-def reservation_history(request):
-    today = timezone.localdate()
-    reservations = Reservation.objects.filter(user=request.user)
-
-    return render(request, 'photo_booking_app/reservation_history.html', {
-        'reservations': reservations,
-        'today': today
-    })
 
   
 @require_POST  

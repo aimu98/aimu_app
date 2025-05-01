@@ -5,8 +5,9 @@
 <div class="container mt-5">
     <h2 class="mb-4 text-center">撮影予約フォーム</h2>
 
-    <form method="POST" action="{% url 'reservation_done' %}">
+    <form method="POST" action="{% url 'reservation' %}">
         {% csrf_token %}
+        {{ form.as_p }}
 
         <!-- 日付選択（Flatpickrで有効日だけ表示） -->
         <div class="mb-3">
@@ -14,7 +15,7 @@
             <input type="text" id="id_date" name="date" class="form-control" required>
         </div>
 
-        <!-- 時間選択（選択した日に応じて変更） -->
+        <!-- 時間選択 -->
         <div class="mb-3">
             <label for="start_time" class="form-label">開始時間</label>
             <select id="start_time" name="start_time" class="form-select" required>
@@ -33,8 +34,8 @@
         <div class="mb-3">
             <label for="plan" class="form-label">プラン</label>
             <select id="plan" name="plan" class="form-select" required>
-                <option value="ベーシック">ベーシックプラン</option>
-                <option value="七五三">七五三プラン</option>
+                <option value="basic">ベーシックプラン</option>
+                <option value="753">七五三プラン</option>
             </select>
         </div>
 
@@ -58,52 +59,59 @@
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const dateInput = document.querySelector("#id_date");
-    const startSelect = document.getElementById("start_time");
-    const endSelect = document.getElementById("end_time");
-
-    // 日付の有効日取得 → Flatpickrへ反映
-    fetch("{% url 'get_available_dates' %}")
-        .then(response => response.json())
-        .then(data => {
-            flatpickr(dateInput, {
-                dateFormat: "Y-m-d",
-                enable: data.available_dates
-            });
-        });
-
-    // 日付が選ばれたら → 対応する時間を取得して選択肢に表示
-    dateInput.addEventListener("change", function () {
-        const date = this.value;
-        fetch(`/api/available-times/?date=${date}`)
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateInput = document.querySelector("#id_date");
+        const startSelect = document.getElementById("start_time");
+        const endSelect = document.getElementById("end_time");
+    
+        // 日付の有効日取得 → Flatpickrへ反映
+        fetch("{% url 'get_available_dates' %}")
             .then(response => response.json())
             .then(data => {
-                startSelect.innerHTML = '<option value="">-- 時間を選択 --</option>';
-                endSelect.innerHTML = '<option value="">-- 時間を選択 --</option>';
-
-                if (data.available_times.length > 0) {
-                    data.available_times.forEach(slot => {
-                        const [start, end] = slot.split(" - ");
-
-                        const optionStart = document.createElement("option");
-                        optionStart.value = start;
-                        optionStart.textContent = start;
-                        startSelect.appendChild(optionStart);
-
-                        const optionEnd = document.createElement("option");
-                        optionEnd.value = end;
-                        optionEnd.textContent = end;
-                        endSelect.appendChild(optionEnd);
-                    });
-                } else {
-                    const opt = document.createElement("option");
-                    opt.textContent = "時間帯なし";
-                    startSelect.appendChild(opt);
-                    endSelect.appendChild(opt.cloneNode(true));
-                }
+                flatpickr(dateInput, {
+                    dateFormat: "Y-m-d",
+                    enable: data.available_dates
+                });
             });
+    
+        // 日付が選ばれたら → 対応する時間を取得して選択肢に表示
+        dateInput.addEventListener("change", function () {
+            const date = this.value;
+            fetch(`/api/available-times/?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 時間帯の選択肢をリセット
+                    startSelect.innerHTML = '<option value="">-- 時間を選択 --</option>';
+                    endSelect.innerHTML = '<option value="">-- 時間を選択 --</option>';
+        
+                    if (data.available_times && data.available_times.length > 0) {
+                        // 時間帯があれば、start_time と end_time の選択肢を更新
+                        data.available_times.forEach(slot => {
+                            const [start, end] = slot.split(" - ");
+        
+                            const optionStart = document.createElement("option");
+                            optionStart.value = start;
+                            optionStart.textContent = start;
+                            startSelect.appendChild(optionStart);
+        
+                            const optionEnd = document.createElement("option");
+                            optionEnd.value = end;
+                            optionEnd.textContent = end;
+                            endSelect.appendChild(optionEnd);
+                        });
+                    } else {
+                        // 時間帯がない場合、"時間帯なし" を表示
+                        const opt = document.createElement("option");
+                        opt.textContent = "時間帯なし";
+                        startSelect.appendChild(opt);
+                        endSelect.appendChild(opt.cloneNode(true));
+                    }
+                })
+                .catch(err => {
+                    console.error('APIエラー:', err);
+                });
+        });
     });
-});
+    
 </script>
 {% endblock %}

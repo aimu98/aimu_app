@@ -1,39 +1,55 @@
 from django import forms
-from .models import Reservation , AvailableSlot
-from datetime import timedelta, date
+from photo_booking_app.models import Reservation, AvailableSlot
+from datetime import timedelta, date, datetime, time
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 
-class ReservationForm(forms.ModelForm):
-    class Meta:
-        model = Reservation
-        fields = ['name','children_name', 'phone', 'date', 'start_time','end_time','plan','message']
-        exclude = ['user', 'created_at']
-        widgets = {
-            'date': forms.SelectDateWidget, 
-        }
-    
-    start_time = forms.ChoiceField(choices=[], required=True)
-    end_time = forms.ChoiceField(choices=[], required=True)
+# class ReservationForm(forms.ModelForm):
+#     start_time = forms.ChoiceField(choices=[], required=True)
+#     end_time = forms.ChoiceField(choices=[], required=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        slots = AvailableSlot.objects.order_by('start_time', 'end_time')
-        start_choices = sorted(set((slot.start_time, slot.start_time.strftime('%H:%M')) for slot in slots))
-        end_choices = sorted(set((slot.end_time, slot.end_time.strftime('%H:%M')) for slot in slots))
+#     class Meta:
+#         model = Reservation
+#         fields = ['name', 'children_name', 'date', 'start_time', 'end_time', 'plan']
+#         widgets = {
+#             'date': forms.SelectDateWidget,
+#         }
 
-        self.fields['start_time'].choices = start_choices
-        self.fields['end_time'].choices = end_choices
+#     def __init__(self, *args, **kwargs):
+#         selected_date = kwargs.pop('selected_date', None)
+#         super().__init__(*args, **kwargs)
+
+#         # 時間の選択肢を初期化
+#         if selected_date:
+#             try:
+#                 date_obj = datetime.strptime(selected_date, "%Y-%m-%d").date()
+#                 slots = AvailableSlot.objects.filter(date=date_obj).order_by('start_time')
+#             except ValueError:
+#                 slots = AvailableSlot.objects.none()
+#         else:
+#             slots = AvailableSlot.objects.none()
+
+#         # ChoiceFieldのvalueは文字列で統一
+#         time_choices = [
+#             (slot.start_time.strftime('%H:%M'), slot.start_time.strftime('%H:%M')) for slot in slots
+#         ]
+
+#         self.fields['start_time'].choices = time_choices
+#         self.fields['end_time'].choices = time_choices
+
+
         
-    def save(self, user=None, commit=True):
-        reservation = super().save(commit=False)
-        if user is not None:
-            reservation.user = user
-        if commit:
-            reservation.save() 
-        return reservation
+#     def save(self, user=None, commit=True):
+#         reservation = super().save(commit=False)
+#         if user is not None:
+#             reservation.user = user
+            
+#         reservation.start_time = datetime.strptime(self.cleaned_data['start_time'], "%H:%M").time()
+#         reservation.end_time = datetime.strptime(self.cleaned_data['end_time'], "%H:%M").time()
+#         if commit:
+#             reservation.save() 
+#         return reservation
             
 class AvailableSlotForm(forms.ModelForm):
     class Meta:

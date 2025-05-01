@@ -10,6 +10,7 @@ from django.contrib.auth import update_session_auth_hash, logout
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
 from photo_booking_app.forms import CustomUserCreationForm
+from .forms import ReservationForm
 
 def signup_view(request):
     if request.method == 'POST':
@@ -49,6 +50,20 @@ def cancel_reservation(request, reservation_id):
         messages.error(request, "3日以内の予約はキャンセルできません。")
 
     return redirect('reservation_history')
+
+@login_required
+def edit_reservation(request, reservation_id):
+    reservation = get_object_or_404(Reservation, id=reservation_id, user=request.user)
+
+    if request.method == 'POST':
+        form = ReservationForm(request.POST, instance=reservation)
+        if form.is_valid():
+            form.save()
+            return redirect('accounts:reservation_history')  # 編集完了後に予約履歴に戻す
+    else:
+        form = ReservationForm(instance=reservation)
+
+    return render(request, 'accounts/edit_reservation.html', {'form': form})
 
 @login_required
 def password_change(request):

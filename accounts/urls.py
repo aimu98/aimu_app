@@ -6,7 +6,8 @@ app_name = 'accounts'
 
 urlpatterns = [
     path('mypage/', views.mypage, name='mypage'),
-    path('reservations/history/', views.reservation_history, name='reservation_history'),
+    path('reservations_history/', views.reservation_history, name='reservation_history'),
+     path('reservation/edit/<int:reservation_id>/', views.edit_reservation, name='edit_reservation'),
     path('signup/', views.signup_view, name='signup'), 
     path('dashboard/', views.dashboard, name='dashboard'),
     path('reservations/cancel/<int:reservation_id>/', views.cancel_reservation, name='cancel_reservation'),
